@@ -1,6 +1,6 @@
 #pragma once
-#include "Kernel.h"
-#include "Parser.h"
+#include "../core_math/Kernel.h"
+#include "../core_math/Parser.h"
 #include "Serial.h"
 #include <string>
 #include <vector>

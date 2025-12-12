@@ -1,0 +1,15 @@
+App(
+    appid="uMath_terminal",
+    name="uMath Terminal",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="umath_app_main",
+    cdefines=["APP_UMATH"],
+    requires=[
+        "gui",
+        "notification",
+    ],
+    stack_size=2 * 1024,
+    order=20,
+    fap_icon="icon.png", # Placeholder
+    fap_category="GPIO",
+)

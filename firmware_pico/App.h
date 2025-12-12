@@ -1,8 +1,8 @@
 #pragma once
 #include "Display.h"
 #include "Input.h"
-#include "Kernel.h"
-#include "Parser.h"
+#include "../core_math/Kernel.h"
+#include "../core_math/Parser.h"
 #include <string>
 #include <vector>
 
