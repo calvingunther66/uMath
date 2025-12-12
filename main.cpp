@@ -1,61 +1,78 @@
-#include "App.h"
+#include "App.h" // To test InputManager queue integration directly
+#include "Keyboard.h"
+#include "Mouse.h" // New
+#include "Serial.h"
+#include "Shell.h"
 #include <iostream>
+
+// If mocked
+#ifndef PICO_BOARD
+#include "MockHardware.h"
+#endif
 
 using namespace uMath;
 
-// Helper to print display buffer to console
-void dump_display(const DisplayBuffer &dbuff) {
-  std::cout << "\n+--------------------------------+\n";
-  for (int i = 0; i < DisplayBuffer::LINES; ++i) {
-    std::cout << "| " << dbuff.getLine(i) << " |\n";
-  }
-  std::cout << "+--------------------------------+\n";
+// Global Shell for callbacks
+Shell *g_shell = nullptr;
+
+void serial_logger(const char *msg) {
+  Serial::print(msg);
+  // Serial::print("\n"); // Appending newline might duplicate if shell already
+  // does it? Shell adds \n during `onChar` echo, but Kernel logs are separate
+  // lines. Let's assume Kernel logs don't have newlines. Serial::print("\n");
 }
 
 int main() {
+  Serial::init();
+  Kernel::setLogger(serial_logger);
+
+  // We will test the unified InputManager used by the App state machine
+  // (Navigation) AND the Shell (Typing). Note: In Phase 4 we used Shell
+  // directly, bypassing App's state machine for typing. In Phase 3 we used App.
+  // For this test, let's verify Mouse -> App Navigation.
+
   uMathApp app;
+  MouseHandler mouse(app.input); // Hook mouse to App's InputManager
 
-  std::cout << "=== uMath Phase 3: Hardware Simulation ===\n";
+  std::cout << "=== uMath Phase 5: Composite HID ===\n";
+  std::cout << "State: MENU\n";
 
-  // 1. Initial State: Menu
-  app.update();
+  // 1. Simulate Mouse Scroll Down (Y > 10)
+  // Send two packets to test accumulator
+  hid_mouse_report_t mrep;
+  mrep.buttons = 0;
+  mrep.x = 0;
+  mrep.wheel = 0;
+  mrep.pan = 0;
+
+  mrep.y = 6;
+  std::cout << "[Mouse] Moving Y+6...\n";
+  mouse.process_report(&mrep);
+  app.update(); // Should do nothing (Threshold 10)
+
+  mrep.y = 6; // Total 12
+  std::cout << "[Mouse] Moving Y+6 (Total 12)...\n";
+  mouse.process_report(&mrep);
+  app.update(); // Should trigger DOWN -> Move selection
   app.render();
-  dump_display(app.display);
 
-  // 2. Select 'Calculator' (First item) -> OK
-  std::cout << "\n[Input] Pressing OK to enter Editor...\n";
-  app.input.pushEvent(EventType::BTN_OK);
-  app.update();
+  std::cout << "\nDisplay should show selection moved down.\n";
+
+  // 2. Simulate Left Click (OK) -> Enter Editor
+  mrep.y = 0;
+  mrep.buttons = 1; // Left Click
+  std::cout << "\n[Mouse] Left Click (OK)...\n";
+  mouse.process_report(&mrep);
+  app.update(); // Trigger OK -> Editor
   app.render();
-  dump_display(app.display);
 
-  // 3. Type "x^2"
-  std::cout << "\n[Input] Typing...\n";
-  // Press UP from Space (last in char set) -> Wrap to '0'
-  app.input.pushEvent(EventType::BTN_UP);
-  app.update();
-  app.render();
-  dump_display(app.display); // Should show '0'
-
-  // Simulate typing "2" (next char '1', next '2')
-  app.input.pushEvent(EventType::BTN_UP); // '1'
-  app.update();
-  app.input.pushEvent(EventType::BTN_UP); // '2'
-  app.update();
-  app.render();
-  dump_display(app.display);
-
-  std::cout << "\n[Input] Pressing OK to Solve...\n";
-  app.input.pushEvent(EventType::BTN_OK);
-  app.update();
-  app.render();
-  dump_display(app.display);
-
-  // 4. Test Quadratic Detection Logic via forceful injection
-  // Since we rely on mocked input which is hard to type "x^2...",
-  // let's trust the unit tests from Phase 2 for the math,
-  // and just verify here that the UI switched to SOLVER state.
-  // The previous dump should show "SOLVER" in the title.
+  // 3. Simulate Editor Nav (Move Right)
+  std::cout << "\n[Mouse] Moving X+12...\n";
+  mrep.buttons = 0;
+  mrep.x = 12;
+  mouse.process_report(&mrep);
+  app.update(); // Move cursor Right
+  app.render(); // Cursor should move
 
   return 0;
 }
