@@ -74,5 +74,24 @@ int main() {
   app.update(); // Move cursor Right
   app.render(); // Cursor should move
 
+  // 4. Simulate Keyboard Typing (Composite Test)
+  // Verify we can still type while Mouse is active
+  std::cout << "\n[Keyboard] Typing 'A'...\n";
+  hid_keyboard_report_t krep;
+  krep.modifiers = 0;
+  krep.reserved = 0;
+  std::memset(krep.keycodes, 0, 6);
+  krep.keycodes[0] = HID_KEY_A; // 'a'
+
+  // Note: In real app, we need to route Keyboard chars to the Editor
+  // The App logic currently handles 'Navigation' via InputManager.
+  // The 'Editor' state needs to accept CHAR characters too.
+  // Phase 4 Shell handled it directly. App needs a 'pushChar' or similar?
+  // Or we just verify the translation logic here like Phase 4.
+
+  char c = KeyboardHost::process_report(&krep);
+  if (c == 'a')
+    std::cout << "Detected 'a' from KeyboardHost.\n";
+
   return 0;
 }
