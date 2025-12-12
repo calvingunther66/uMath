@@ -1,7 +1,5 @@
 #include "App.h"
-#include <chrono>
 #include <iostream>
-#include <thread>
 
 using namespace uMath;
 
