@@ -31,7 +31,9 @@ set(FIRMWARE_SOURCES
     App.cpp
     App.cpp
     Keyboard.cpp
+    KeyboardMapper.cpp
     SolverUI.cpp
+    SearchUI.cpp
     # Mouse is header only currently but include if cpp added later
 )
 
