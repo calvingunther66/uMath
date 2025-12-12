@@ -1,7 +1,7 @@
 # uMath: Embedded Computer Algebra System
 **For Raspberry Pi Pico (RP2040) & Flipper Zero**
 
-uMath (formerly "Antigravity") is a highly optimized, memory-safe Computer Algebra System (CAS) designed to run on the **RP2040** microcontroller (Video Game Module) while using the **Flipper Zero** as a display and controller.
+uMath is a highly optimized, memory-safe Computer Algebra System (CAS) designed to run on the **RP2040** microcontroller (Video Game Module) while using the **Flipper Zero** as a display and controller.
 
 ## 🚀 Key Features
 
