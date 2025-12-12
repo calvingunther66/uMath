@@ -33,34 +33,29 @@ uMath is a highly optimized, memory-safe Computer Algebra System (CAS) designed 
 
 ## 🛠 Building the Project
 
-The system requires two build steps: one for the RP2040 firmware and one for the Flipper app.
-
 ### Prerequisites
 *   **Pico SDK** (for RP2040)
 *   **ufbt** (for Flipper Zero)
 *   `cmake`, `make`, `arm-none-eabi-gcc`
 
-### Build Command
-We provide a helper script:
+### 1. Build RP2040 Firmware (`.uf2`)
+This builds the C++ Engine + USB Host Driver.
 ```bash
-./build_all.sh
+cd firmware_pico
+mkdir build
+cd build
+cmake -DPICO_SDK_PATH=/path/to/pico-sdk ..
+make
 ```
+Output: `uMath_pico.uf2`
 
-**Manual Steps:**
-
-1.  **Build Firmware (`.uf2`)**:
-    ```bash
-    cd build_pico
-    cmake -DPICO_SDK_PATH=/path/to/pico-sdk ../firmware_pico
-    make
-    # Flash uMath_pico.uf2 to the Video Game Module
-    ```
-
-2.  **Build App (`.fap`)**:
-    ```bash
-    ufbt ./app_flipper
-    # Install the resulting .fap to the Flipper Zero
-    ```
+### 2. Build Flipper App (`.fap`)
+This builds the GUI Terminal.
+```bash
+# From the root directory:
+ufbt ./app_flipper
+```
+Output: `dist/uMath_terminal.fap`
 
 ## 🕹 Usage
 

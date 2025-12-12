@@ -12,6 +12,10 @@ pico_sdk_init()
 # Fix RP2040 USB Host Enumeration Issue
 add_definitions(-DPICO_RP2040_USB_DEVICE_ENUMERATION_FIX=1)
 
+# UART Definitions (Matches Video Game Module Hardware)
+add_definitions(-DUART_TX_PIN=0)
+add_definitions(-DUART_RX_PIN=1)
+
 # --- uMath Sources ---
 # Core Math Library
 set(CORE_SOURCES
