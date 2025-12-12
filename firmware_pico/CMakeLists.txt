@@ -22,6 +22,7 @@ set(CORE_SOURCES
     ../core_math/AST.cpp
     ../core_math/Parser.cpp
     ../core_math/Kernel.cpp
+    ../core_math/FormulaBank.cpp
 )
 
 # Firmware Implementation

@@ -1,3 +1,4 @@
+#include "../core_math/FormulaBank.h" // New
 #include "App.h" // To test InputManager queue integration directly
 #include "Keyboard.h"
 #include "Mouse.h" // New
@@ -92,6 +93,18 @@ int main() {
   char c = KeyboardHost::process_report(&krep);
   if (c == 'a')
     std::cout << "Detected 'a' from KeyboardHost.\n";
+
+  // 5. Verify Formula Bank
+  std::cout << "\n[Vault] Searching for 'Gas'...\n";
+  const Formula *f = FormulaBank::findFormula("Gas");
+  if (f) {
+    std::cout << "Found: " << f->name << "\n";
+    std::cout << "Eq: " << f->equation_str << "\n";
+    // Sanity check equation parsing
+    // Nodearena reset is usually needed but we are just printing strings here
+  } else {
+    std::cout << "Formula not found!\n";
+  }
 
   return 0;
 }
