@@ -1,109 +1,92 @@
-#include "../core_math/FormulaBank.h" // New
-#include "App.h" // To test InputManager queue integration directly
-#include "Keyboard.h"
-#include "Mouse.h" // New
+#include "../core_math/FormulaBank.h"
 #include "Serial.h"
-#include "Shell.h"
+#include "SolverUI.h" // New
 #include <iostream>
-
-// If mocked
-#ifndef PICO_BOARD
-#include "MockHardware.h"
-#endif
 
 using namespace uMath;
 
-// Global Shell for callbacks
-Shell *g_shell = nullptr;
-
-void serial_logger(const char *msg) {
-  Serial::print(msg);
-  // Serial::print("\n"); // Appending newline might duplicate if shell already
-  // does it? Shell adds \n during `onChar` echo, but Kernel logs are separate
-  // lines. Let's assume Kernel logs don't have newlines. Serial::print("\n");
+void dump_display(const DisplayBuffer &dbuff) {
+  std::cout << "\n+--------------------------------+\n";
+  for (int i = 0; i < DisplayBuffer::LINES; ++i) {
+    std::cout << "| " << dbuff.getLine(i) << " |\n";
+  }
+  std::cout << "+--------------------------------+\n";
 }
 
 int main() {
   Serial::init();
-  Kernel::setLogger(serial_logger);
 
-  // We will test the unified InputManager used by the App state machine
-  // (Navigation) AND the Shell (Typing). Note: In Phase 4 we used Shell
-  // directly, bypassing App's state machine for typing. In Phase 3 we used App.
-  // For this test, let's verify Mouse -> App Navigation.
+  // Setup UI
+  SolverUI solver;
+  DisplayBuffer display;
+  InputManager input; // Isolated input for this test
 
-  uMathApp app;
-  MouseHandler mouse(app.input); // Hook mouse to App's InputManager
+  std::cout << "=== uMath Phase 8: Solver UI ===\n";
 
-  std::cout << "=== uMath Phase 5: Composite HID ===\n";
-  std::cout << "State: MENU\n";
+  // 1. Load Ideal Gas Law
+  std::cout << "[Setup] Loading 'Ideal Gas Law'...\n";
+  const Formula *f = FormulaBank::findFormula("Ideal");
+  if (f)
+    solver.loadFormula(f);
 
-  // 1. Simulate Mouse Scroll Down (Y > 10)
-  // Send two packets to test accumulator
-  hid_mouse_report_t mrep;
-  mrep.buttons = 0;
-  mrep.x = 0;
-  mrep.wheel = 0;
-  mrep.pan = 0;
+  solver.render(display);
+  dump_display(display);
 
-  mrep.y = 6;
-  std::cout << "[Mouse] Moving Y+6...\n";
-  mouse.process_report(&mrep);
-  app.update(); // Should do nothing (Threshold 10)
+  // 2. Simulate User Input:
+  // P = 101 (Row 0)
+  std::cout << "[Input] Typing '101' into P...\n";
+  solver.onChar('1');
+  solver.onChar('0');
+  solver.onChar('1');
+  solver.render(display);
+  dump_display(display);
 
-  mrep.y = 6; // Total 12
-  std::cout << "[Mouse] Moving Y+6 (Total 12)...\n";
-  mouse.process_report(&mrep);
-  app.update(); // Should trigger DOWN -> Move selection
-  app.render();
+  // Move Down to V
+  std::cout << "[Input] Moving Down to V...\n";
+  input.pushEvent(EventType::BTN_DOWN);
+  solver.update(input);
 
-  std::cout << "\nDisplay should show selection moved down.\n";
+  // V = ? (Default) -> Leave it
 
-  // 2. Simulate Left Click (OK) -> Enter Editor
-  mrep.y = 0;
-  mrep.buttons = 1; // Left Click
-  std::cout << "\n[Mouse] Left Click (OK)...\n";
-  mouse.process_report(&mrep);
-  app.update(); // Trigger OK -> Editor
-  app.render();
+  // Move Down to n
+  std::cout << "[Input] Moving to n...\n";
+  input.pushEvent(EventType::BTN_DOWN);
+  solver.update(input);
 
-  // 3. Simulate Editor Nav (Move Right)
-  std::cout << "\n[Mouse] Moving X+12...\n";
-  mrep.buttons = 0;
-  mrep.x = 12;
-  mouse.process_report(&mrep);
-  app.update(); // Move cursor Right
-  app.render(); // Cursor should move
+  // n = 2.5
+  std::cout << "[Input] Typing '2.5' into n...\n";
+  solver.onChar('2');
+  solver.onChar('.');
+  solver.onChar('5');
 
-  // 4. Simulate Keyboard Typing (Composite Test)
-  // Verify we can still type while Mouse is active
-  std::cout << "\n[Keyboard] Typing 'A'...\n";
-  hid_keyboard_report_t krep;
-  krep.modifiers = 0;
-  krep.reserved = 0;
-  std::memset(krep.keycodes, 0, 6);
-  krep.keycodes[0] = HID_KEY_A; // 'a'
+  // Move Down to R (3) -> T (4) -> Submit (5)
+  // Actually we just set Values.
+  // Let's Skip to Solve basic flow
+  // ...
 
-  // Note: In real app, we need to route Keyboard chars to the Editor
-  // The App logic currently handles 'Navigation' via InputManager.
-  // The 'Editor' state needs to accept CHAR characters too.
-  // Phase 4 Shell handled it directly. App needs a 'pushChar' or similar?
-  // Or we just verify the translation logic here like Phase 4.
+  // 3. Trigger Solve
+  // We need to navigate to bottom or hit OK multiple times?
+  // Logic said: if at bottom, OK triggers.
+  // Let's force scroll down to bottom.
+  // Rows: P(0), V(1), n(2), R(3), T(4).
+  // Currently at n(2).
+  input.pushEvent(EventType::BTN_DOWN); // R
+  input.pushEvent(EventType::BTN_DOWN); // T
+  // input.pushEvent(EventType::BTN_DOWN); // End? No.
+  solver.update(input);
 
-  char c = KeyboardHost::process_report(&krep);
-  if (c == 'a')
-    std::cout << "Detected 'a' from KeyboardHost.\n";
+  // Now at T(4). Press OK to finish/solve?
+  std::cout << "[Input] Pressing OK (at T) to Solve...\n";
+  input.pushEvent(EventType::BTN_OK); // T -> Solve? logic: if last row -> solve
+  // Re-read logic: "if (selected_row < size-1) ++ else solve".
+  // Size is 5. Max index 4. So at index 4, OK solves.
+  solver.update(input);
 
-  // 5. Verify Formula Bank
-  std::cout << "\n[Vault] Searching for 'Gas'...\n";
-  const Formula *f = FormulaBank::findFormula("Gas");
-  if (f) {
-    std::cout << "Found: " << f->name << "\n";
-    std::cout << "Eq: " << f->equation_str << "\n";
-    // Sanity check equation parsing
-    // Nodearena reset is usually needed but we are just printing strings here
+  if (solver.isSolving()) {
+    std::cout << "\n[Result] Command Generated:\n";
+    std::cout << solver.getSolutionCommand() << "\n";
   } else {
-    std::cout << "Formula not found!\n";
+    std::cout << "[Error] Solve not triggered.\n";
   }
 
   return 0;

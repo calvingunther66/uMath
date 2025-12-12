@@ -29,7 +29,9 @@ set(CORE_SOURCES
 set(FIRMWARE_SOURCES
     main.cpp
     App.cpp
+    App.cpp
     Keyboard.cpp
+    SolverUI.cpp
     # Mouse is header only currently but include if cpp added later
 )
 
